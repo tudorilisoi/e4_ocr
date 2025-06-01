@@ -7,8 +7,13 @@ plugins {
 
 android {
     namespace = "com.example.e4_ocr"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // compileSdk = flutter.compileSdkVersion
+
+    // NOTE required by photo_manager 
+    compileSdkVersion = "android-34"
+    ndkVersion = "27.0.12077973"
+    
+    // ndkVersion = flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
