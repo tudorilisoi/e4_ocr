@@ -1,8 +1,9 @@
 import 'dart:io';
 
-import 'package:e4_ocr/helpers.dart';
+import 'package:dotted_border/dotted_border.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 
 void main() {
@@ -12,245 +13,330 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Image Crop OCR',
+      title: 'Flutter Demo',
       theme: ThemeData(
-        brightness: Brightness.dark,
-        useMaterial3: true,
-        colorSchemeSeed: Colors.teal,
+        highlightColor: const Color(0xFFD0996F),
+        canvasColor: const Color(0xFFFDF5EC),
+        textTheme: TextTheme(
+          headlineSmall: ThemeData.light().textTheme.headlineSmall!.copyWith(
+            color: const Color(0xFFBC764A),
+          ),
+        ),
+        iconTheme: IconThemeData(color: Colors.grey[600]),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFFBC764A),
+          centerTitle: false,
+          foregroundColor: Colors.white,
+          actionsIconTheme: IconThemeData(color: Colors.white),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ButtonStyle(
+            backgroundColor: WidgetStateColor.resolveWith(
+              (states) => const Color(0xFFBC764A),
+            ),
+            foregroundColor: WidgetStateColor.resolveWith(
+              (states) => Colors.white,
+            ),
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: ButtonStyle(
+            foregroundColor: WidgetStateColor.resolveWith(
+              (states) => const Color(0xFFBC764A),
+            ),
+            side: WidgetStateBorderSide.resolveWith(
+              (states) => const BorderSide(color: Color(0xFFBC764A)),
+            ),
+          ),
+        ),
+        textButtonTheme: TextButtonThemeData(
+          style: ButtonStyle(
+            foregroundColor: WidgetStateColor.resolveWith(
+              (states) => const Color(0xFFBC764A),
+            ),
+          ),
+        ),
+        iconButtonTheme: IconButtonThemeData(
+          style: ButtonStyle(
+            foregroundColor: WidgetStateColor.resolveWith(
+              (states) => const Color(0xFFBC764A),
+            ),
+          ),
+        ),
+        colorScheme: ColorScheme.fromSwatch().copyWith(
+          background: const Color(0xFFFDF5EC),
+          primary: const Color(0xFFD0996F),
+        ),
       ),
-      home: const ImagePickerScreen(),
-      debugShowCheckedModeBanner: false,
+      home: const HomePage(title: 'Image Cropper Demo'),
     );
   }
 }
 
-class ImagePickerScreen extends StatefulWidget {
-  const ImagePickerScreen({super.key});
+class HomePage extends StatefulWidget {
+  final String title;
+
+  const HomePage({super.key, required this.title});
 
   @override
-  State<ImagePickerScreen> createState() => _ImagePickerScreenState();
+  State<HomePage> createState() => _HomePageState();
 }
 
-class _ImagePickerScreenState extends State<ImagePickerScreen> {
-  File? _image;
+class _HomePageState extends State<HomePage> {
+  XFile? _pickedFile;
+  CroppedFile? _croppedFile;
 
-  Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery);
-    if (picked != null) {
-      setState(() => _image = File(picked.path));
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: !kIsWeb ? AppBar(title: Text(widget.title)) : null,
+      body: Column(
+        mainAxisSize: MainAxisSize.max,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (kIsWeb)
+            Padding(
+              padding: const EdgeInsets.all(kIsWeb ? 24.0 : 16.0),
+              child: Text(
+                widget.title,
+                style: Theme.of(context).textTheme.displayMedium!.copyWith(
+                  color: Theme.of(context).highlightColor,
+                ),
+              ),
+            ),
+          Expanded(child: _body()),
+        ],
+      ),
+    );
+  }
+
+  Widget _body() {
+    if (_croppedFile != null || _pickedFile != null) {
+      return _imageCard();
+    } else {
+      return _uploaderCard();
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Image OCR Cropper")),
-      body: Center(
-        child: _image == null
-            ? ElevatedButton.icon(
-                onPressed: _pickImage,
-                icon: const Icon(Icons.photo),
-                label: const Text("Pick Image"),
-              )
-            : ImageCropScreen(image: _image!),
-      ),
-    );
-  }
-}
-
-class ImageCropScreen extends StatefulWidget {
-  final File image;
-  const ImageCropScreen({super.key, required this.image});
-
-  @override
-  State<ImageCropScreen> createState() => _ImageCropScreenState();
-}
-
-class _ImageCropScreenState extends State<ImageCropScreen> {
-  bool _showCropOverlay = true;
-  String _recognizedText = "foobar";
-  final GlobalKey _imageKey = GlobalKey();
-
-  final double handleSize = 20;
-  Rect cropRect = const Rect.fromLTWH(100, 100, 200, 200);
-
-  Offset? _dragStart;
-  Rect? _startRect;
-
-  void _onDragStart(DragStartDetails details) {
-    _dragStart = details.localPosition;
-    _startRect = cropRect;
-  }
-
-  void _onDragUpdate(DragUpdateDetails details) {
-    if (_dragStart == null || _startRect == null) return;
-    final dx = details.localPosition.dx - _dragStart!.dx;
-    final dy = details.localPosition.dy - _dragStart!.dy;
-    setState(() {
-      cropRect = _startRect!.translate(dx, dy);
-    });
-  }
-
-  void _onHandleDrag(DragUpdateDetails details, String corner) {
-    setState(() {
-      double newLeft = cropRect.left;
-      double newTop = cropRect.top;
-      double newRight = cropRect.right;
-      double newBottom = cropRect.bottom;
-
-      switch (corner) {
-        case 'tl':
-          newLeft += details.delta.dx;
-          newTop += details.delta.dy;
-          break;
-        case 'tr':
-          newRight += details.delta.dx;
-          newTop += details.delta.dy;
-          break;
-        case 'bl':
-          newLeft += details.delta.dx;
-          newBottom += details.delta.dy;
-          break;
-        case 'br':
-          newRight += details.delta.dx;
-          newBottom += details.delta.dy;
-          break;
-      }
-
-      cropRect = Rect.fromLTRB(newLeft, newTop, newRight, newBottom);
-    });
-  }
-
-  Future<void> _cropAndRecognizeText() async {
-    getCroppedImage(widget.image, cropRect).then((value) {
-      debugPrint("Image cropped");
-    });
-
-    // setState(() => _recognizedText = result.text);
-    // recognizer.close();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Crop & OCR'),
-        actions: [
-          IconButton(
-            icon: Icon(_showCropOverlay ? Icons.zoom_out_map : Icons.crop),
-            tooltip: 'Toggle Overlay',
-            onPressed: () =>
-                setState(() => _showCropOverlay = !_showCropOverlay),
-          ),
-          IconButton(
-            icon: const Icon(Icons.document_scanner),
-            tooltip: 'Crop and OCR',
-            onPressed: _cropAndRecognizeText,
-          ),
-        ],
-      ),
-      body: Column(
+  Widget _imageCard() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return InteractiveViewer(
-                  key: _imageKey,
-                  boundaryMargin: const EdgeInsets.all(20),
-                  minScale: 1,
-                  maxScale: 4,
-                  child: Stack(
-                    children: [
-                      Image.file(widget.image, fit: BoxFit.contain),
-                      if (_showCropOverlay)
-                        Positioned.fill(
-                          child: GestureDetector(
-                            onPanStart: _onDragStart,
-                            onPanUpdate: _onDragUpdate,
-                            child: CustomPaint(
-                              painter: CropRectPainter(cropRect),
-                            ),
-                          ),
-                        ),
-                      if (_showCropOverlay) ..._buildHandles(),
-                    ],
-                  ),
-                );
-              },
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: kIsWeb ? 24.0 : 16.0,
             ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(12),
-            color: Colors.black.withOpacity(0.6),
-            width: double.infinity,
-            child: Text(
-              'Position: (${cropRect.left.toStringAsFixed(1)}, ${cropRect.top.toStringAsFixed(1)}) | '
-              'Size: ${cropRect.width.toStringAsFixed(1)} x ${cropRect.height.toStringAsFixed(1)}',
-              style: const TextStyle(color: Colors.white, fontSize: 12),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          if (_recognizedText.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.all(12),
-              color: Colors.black.withOpacity(0.6),
-              width: double.infinity,
-              child: Text(
-                _recognizedText,
-                style: const TextStyle(color: Colors.white, fontSize: 16),
+            child: Card(
+              elevation: 4.0,
+              child: Padding(
+                padding: const EdgeInsets.all(kIsWeb ? 24.0 : 16.0),
+                child: _image(),
               ),
             ),
+          ),
+          const SizedBox(height: 24.0),
+          _menu(),
         ],
       ),
     );
   }
 
-  List<Widget> _buildHandles() {
-    return [
-      _handle(cropRect.topLeft, 'tl'),
-      _handle(cropRect.topRight, 'tr'),
-      _handle(cropRect.bottomLeft, 'bl'),
-      _handle(cropRect.bottomRight, 'br'),
-    ];
+  Widget _image() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    if (_croppedFile != null) {
+      final path = _croppedFile!.path;
+      return ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 0.8 * screenWidth,
+          maxHeight: 0.7 * screenHeight,
+        ),
+        child: kIsWeb ? Image.network(path) : Image.file(File(path)),
+      );
+    } else if (_pickedFile != null) {
+      final path = _pickedFile!.path;
+      return ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 0.8 * screenWidth,
+          maxHeight: 0.7 * screenHeight,
+        ),
+        child: kIsWeb ? Image.network(path) : Image.file(File(path)),
+      );
+    } else {
+      return const SizedBox.shrink();
+    }
   }
 
-  Widget _handle(Offset offset, String corner) {
-    return Positioned(
-      left: offset.dx - handleSize / 2,
-      top: offset.dy - handleSize / 2,
-      child: GestureDetector(
-        onPanUpdate: (details) => _onHandleDrag(details, corner),
-        child: Container(
-          width: handleSize,
-          height: handleSize,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: Colors.black),
-            shape: BoxShape.circle,
+  Widget _menu() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        FloatingActionButton(
+          onPressed: () {
+            _clear();
+          },
+          backgroundColor: Colors.redAccent,
+          tooltip: 'Delete',
+          child: const Icon(Icons.delete),
+        ),
+        if (_croppedFile == null)
+          Padding(
+            padding: const EdgeInsets.only(left: 32.0),
+            child: FloatingActionButton(
+              onPressed: () {
+                _cropImage();
+              },
+              backgroundColor: const Color(0xFFBC764A),
+              tooltip: 'Crop',
+              child: const Icon(Icons.crop),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _uploaderCard() {
+    return Center(
+      child: Card(
+        elevation: 4.0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.0),
+        ),
+        child: SizedBox(
+          width: kIsWeb ? 380.0 : 320.0,
+          height: 300.0,
+          child: Column(
+            mainAxisSize: MainAxisSize.max,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: DottedBorder(
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.image,
+                            color: Theme.of(context).highlightColor,
+                            size: 80.0,
+                          ),
+                          const SizedBox(height: 24.0),
+                          Text(
+                            'Upload an image to start',
+                            style: kIsWeb
+                                ? Theme.of(
+                                    context,
+                                  ).textTheme.headlineSmall!.copyWith(
+                                    color: Theme.of(context).highlightColor,
+                                  )
+                                : Theme.of(
+                                    context,
+                                  ).textTheme.bodyMedium!.copyWith(
+                                    color: Theme.of(context).highlightColor,
+                                  ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24.0),
+                child: ElevatedButton(
+                  onPressed: () {
+                    _uploadImage();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Upload'),
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
-}
 
-class CropRectPainter extends CustomPainter {
-  final Rect rect;
-  CropRectPainter(this.rect);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white70
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
-    canvas.drawRect(rect, paint);
+  Future<void> _cropImage() async {
+    if (_pickedFile != null) {
+      final croppedFile = await ImageCropper().cropImage(
+        sourcePath: _pickedFile!.path,
+        compressFormat: ImageCompressFormat.jpg,
+        compressQuality: 100,
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Cropper',
+            toolbarColor: Colors.deepOrange,
+            toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.square,
+            lockAspectRatio: false,
+            aspectRatioPresets: [
+              CropAspectRatioPreset.original,
+              CropAspectRatioPreset.square,
+              CropAspectRatioPreset.ratio4x3,
+              CropAspectRatioPresetCustom(),
+            ],
+          ),
+          IOSUiSettings(
+            title: 'Cropper',
+            aspectRatioPresets: [
+              CropAspectRatioPreset.original,
+              CropAspectRatioPreset.square,
+              CropAspectRatioPreset.ratio4x3,
+              CropAspectRatioPresetCustom(),
+            ],
+          ),
+          WebUiSettings(
+            context: context,
+            presentStyle: WebPresentStyle.dialog,
+            size: const CropperSize(width: 520, height: 520),
+          ),
+        ],
+      );
+      if (croppedFile != null) {
+        setState(() {
+          _croppedFile = croppedFile;
+        });
+      }
+    }
   }
 
+  Future<void> _uploadImage() async {
+    final pickedFile = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+    );
+    if (pickedFile != null) {
+      setState(() {
+        _pickedFile = pickedFile;
+      });
+    }
+  }
+
+  void _clear() {
+    setState(() {
+      _pickedFile = null;
+      _croppedFile = null;
+    });
+  }
+}
+
+class CropAspectRatioPresetCustom implements CropAspectRatioPresetData {
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  (int, int)? get data => (2, 3);
+
+  @override
+  String get name => '2x3 (customized)';
 }
