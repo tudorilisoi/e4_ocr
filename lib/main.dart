@@ -23,17 +23,17 @@ ThemeData darkTheme(Color baseColor) => ThemeData.dark().copyWith(
     primary: baseColor,
     secondary: baseColor.withOpacity(0.8),
     surface: Colors.grey[900]!,
-    onPrimary: Colors.white, // Text/icon color when on primary
-    onSecondary: Colors.white, // Text/icon color when on secondary
-    onSurface: Colors.white, // Default text/icon color
+    onPrimary: Colors.tealAccent, // Text/icon color when on primary
+    onSecondary: Colors.tealAccent, // Text/icon color when on secondary
+    onSurface: Colors.tealAccent, // Default text/icon color
   ),
   floatingActionButtonTheme: FloatingActionButtonThemeData(
     backgroundColor: baseColor,
-    foregroundColor: Colors.white, // Ensures icon is visible
+    foregroundColor: Colors.tealAccent, // Ensures icon is visible
   ),
   elevatedButtonTheme: ElevatedButtonThemeData(
     style: ElevatedButton.styleFrom(
-      foregroundColor: Colors.white,
+      foregroundColor: Colors.tealAccent,
       backgroundColor: baseColor,
     ),
   ),
@@ -249,7 +249,7 @@ class _HomePageState extends State<HomePage> {
                     _uploadImage();
                   },
                   style: ElevatedButton.styleFrom(
-                    foregroundColor: Colors.white,
+                    foregroundColor: Colors.tealAccent,
                   ),
                   child: const Text('Upload'),
                 ),
