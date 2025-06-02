@@ -126,13 +126,10 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
   }
 
   Future<void> _cropAndRecognizeText() async {
-    final inputImage = await getInputImageFromRepaintBoundary(
-      _imageKey,
-      cropRect,
-    );
+    final inputImage = await getCroppedImage(_imageKey, cropRect);
 
     if (inputImage == null) {
-      print("No OCR image");
+      debugPrint("No OCR image");
       return;
     }
 
@@ -168,15 +165,13 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 return InteractiveViewer(
+                  key: _imageKey,
                   boundaryMargin: const EdgeInsets.all(20),
                   minScale: 1,
                   maxScale: 4,
                   child: Stack(
                     children: [
-                      RepaintBoundary(
-                        key: _imageKey,
-                        child: Image.file(widget.image, fit: BoxFit.contain),
-                      ),
+                      Image.file(widget.image, fit: BoxFit.contain),
                       if (_showCropOverlay)
                         Positioned.fill(
                           child: GestureDetector(

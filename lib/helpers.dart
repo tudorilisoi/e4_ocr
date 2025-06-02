@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 
-Future<InputImage?> getInputImageFromRepaintBoundary(
+Future<InputImage?> getCroppedImage(
   GlobalKey repaintBoundaryKey,
   Rect cropRect,
 ) async {
@@ -17,6 +17,7 @@ Future<InputImage?> getInputImageFromRepaintBoundary(
   final boundary =
       repaintBoundaryKey.currentContext?.findRenderObject()
           as RenderRepaintBoundary?;
+  /*         
 
   // Capture the widget as an image
   final ui.Image uiImage = boundary!.toImageSync(pixelRatio: 1.0);
@@ -47,6 +48,7 @@ Future<InputImage?> getInputImageFromRepaintBoundary(
   //   rethrow;
   //   // return null;
   // }
+  */
 }
 
 Future<String?> _savePngToTempFile(img.Image image) async {
