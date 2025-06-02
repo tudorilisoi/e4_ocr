@@ -1,56 +1,63 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image/image.dart' as img;
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+import 'package:path_provider/path_provider.dart';
 
-void main() => runApp(const MyApp());
+void main() {
+  runApp(const MyApp());
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Image Cropper',
+      title: 'Image Crop OCR',
       theme: ThemeData(
-        useMaterial3: true,
         brightness: Brightness.dark,
+        useMaterial3: true,
         colorSchemeSeed: Colors.teal,
       ),
-      home: const ImageSelectorScreen(),
+      home: const ImagePickerScreen(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
 
-class ImageSelectorScreen extends StatefulWidget {
-  const ImageSelectorScreen({super.key});
+class ImagePickerScreen extends StatefulWidget {
+  const ImagePickerScreen({super.key});
+
   @override
-  State<ImageSelectorScreen> createState() => _ImageSelectorScreenState();
+  State<ImagePickerScreen> createState() => _ImagePickerScreenState();
 }
 
-class _ImageSelectorScreenState extends State<ImageSelectorScreen> {
+class _ImagePickerScreenState extends State<ImagePickerScreen> {
   File? _image;
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final XFile? picked = await picker.pickImage(source: ImageSource.gallery);
+    final picked = await picker.pickImage(source: ImageSource.gallery);
     if (picked != null) {
       setState(() => _image = File(picked.path));
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => ImageCropScreen(image: _image!)),
-      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Select Image')),
+      appBar: AppBar(title: const Text("Image OCR Cropper")),
       body: Center(
-        child: ElevatedButton.icon(
-          icon: const Icon(Icons.photo),
-          label: const Text('Pick from Gallery'),
-          onPressed: _pickImage,
-        ),
+        child: _image == null
+            ? ElevatedButton.icon(
+                onPressed: _pickImage,
+                icon: const Icon(Icons.photo),
+                label: const Text("Pick Image"),
+              )
+            : ImageCropScreen(image: _image!),
       ),
     );
   }
@@ -66,9 +73,10 @@ class ImageCropScreen extends StatefulWidget {
 
 class _ImageCropScreenState extends State<ImageCropScreen> {
   bool _showCropOverlay = true;
+  String _recognizedText = "";
 
   final double handleSize = 20;
-  Rect cropRect = const Rect.fromLTWH(10, 10, 50, 50);
+  Rect cropRect = const Rect.fromLTWH(100, 100, 200, 200);
 
   Offset? _dragStart;
   Rect? _startRect;
@@ -117,42 +125,102 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
     });
   }
 
+  Future<void> _cropAndRecognizeText() async {
+    final original = File(widget.image.path);
+    final bytes = await original.readAsBytes();
+    final image = img.decodeImage(bytes);
+
+    if (image == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Failed to decode image')));
+      return;
+    }
+
+    // Get render size to scale cropRect
+    final box = context.findRenderObject() as RenderBox;
+    final scaleX = image.width / box.size.width;
+    final scaleY = image.height / box.size.height;
+
+    final cropped = img.copyCrop(
+      image,
+      x: (cropRect.left * scaleX).round(),
+      y: (cropRect.top * scaleY).round(),
+      width: (cropRect.width * scaleX).round(),
+      height: (cropRect.height * scaleY).round(),
+    );
+
+    final tempDir = await getTemporaryDirectory();
+    final croppedFile = File('${tempDir.path}/cropped.png')
+      ..writeAsBytesSync(img.encodePng(cropped));
+
+    final inputImage = InputImage.fromFile(croppedFile);
+    final recognizer = TextRecognizer(script: TextRecognitionScript.latin);
+    final result = await recognizer.processImage(inputImage);
+
+    setState(() => _recognizedText = result.text);
+    recognizer.close();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Crop Image'),
+        title: const Text('Crop & OCR'),
         actions: [
           IconButton(
             icon: Icon(_showCropOverlay ? Icons.zoom_out_map : Icons.crop),
-            onPressed: () {
-              setState(() => _showCropOverlay = !_showCropOverlay);
-            },
+            tooltip: 'Toggle Overlay',
+            onPressed: () =>
+                setState(() => _showCropOverlay = !_showCropOverlay),
+          ),
+          IconButton(
+            icon: const Icon(Icons.document_scanner),
+            tooltip: 'Crop and OCR',
+            onPressed: _cropAndRecognizeText,
           ),
         ],
       ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          return InteractiveViewer(
-            boundaryMargin: const EdgeInsets.all(20),
-            minScale: 1.0,
-            maxScale: 4.0,
-            child: Stack(
-              children: [
-                Image.file(widget.image, fit: BoxFit.contain),
-                if (_showCropOverlay)
-                  Positioned.fill(
-                    child: GestureDetector(
-                      onPanStart: _onDragStart,
-                      onPanUpdate: _onDragUpdate,
-                      child: CustomPaint(painter: CropRectPainter(cropRect)),
-                    ),
+      body: Column(
+        children: [
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return InteractiveViewer(
+                  boundaryMargin: const EdgeInsets.all(20),
+                  minScale: 1,
+                  maxScale: 4,
+                  child: Stack(
+                    children: [
+                      Image.file(widget.image, fit: BoxFit.contain),
+                      if (_showCropOverlay)
+                        Positioned.fill(
+                          child: GestureDetector(
+                            onPanStart: _onDragStart,
+                            onPanUpdate: _onDragUpdate,
+                            child: CustomPaint(
+                              painter: CropRectPainter(cropRect),
+                            ),
+                          ),
+                        ),
+                      if (_showCropOverlay) ..._buildHandles(),
+                    ],
                   ),
-                if (_showCropOverlay) ..._buildHandles(),
-              ],
+                );
+              },
             ),
-          );
-        },
+          ),
+          if (_recognizedText.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(12),
+              color: Colors.black.withOpacity(0.6),
+              width: double.infinity,
+              child: Text(
+                _recognizedText,
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -196,7 +264,6 @@ class CropRectPainter extends CustomPainter {
       ..color = Colors.white70
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
-
     canvas.drawRect(rect, paint);
   }
 
