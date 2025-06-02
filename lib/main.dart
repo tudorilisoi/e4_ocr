@@ -89,6 +89,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   XFile? _pickedFile;
   CroppedFile? _croppedFile;
+  bool _busy = false;
 
   @override
   Widget build(BuildContext context) {
@@ -116,6 +117,7 @@ class _HomePageState extends State<HomePage> {
 
   Widget _body() {
     if (_croppedFile != null || _pickedFile != null) {
+      return _uploaderCard();
       return _imageCard();
     } else {
       return _uploaderCard();
@@ -315,9 +317,12 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _uploadImage() async {
-    final pickedFile = await ImagePicker().pickImage(
+    setState(() {
+      _busy = true;
+    });
+    final pickedFile = await (ImagePicker().pickImage(
       source: ImageSource.gallery,
-    );
+    ));
     if (pickedFile != null) {
       setState(() {
         _pickedFile = pickedFile;
