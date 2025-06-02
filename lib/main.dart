@@ -167,28 +167,28 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
-                return RepaintBoundary(
-                  key: _imageKey,
-                  child: InteractiveViewer(
-                    boundaryMargin: const EdgeInsets.all(20),
-                    minScale: 1,
-                    maxScale: 4,
-                    child: Stack(
-                      children: [
-                        Image.file(widget.image, fit: BoxFit.contain),
-                        if (_showCropOverlay)
-                          Positioned.fill(
-                            child: GestureDetector(
-                              onPanStart: _onDragStart,
-                              onPanUpdate: _onDragUpdate,
-                              child: CustomPaint(
-                                painter: CropRectPainter(cropRect),
-                              ),
+                return InteractiveViewer(
+                  boundaryMargin: const EdgeInsets.all(20),
+                  minScale: 1,
+                  maxScale: 4,
+                  child: Stack(
+                    children: [
+                      RepaintBoundary(
+                        key: _imageKey,
+                        child: Image.file(widget.image, fit: BoxFit.contain),
+                      ),
+                      if (_showCropOverlay)
+                        Positioned.fill(
+                          child: GestureDetector(
+                            onPanStart: _onDragStart,
+                            onPanUpdate: _onDragUpdate,
+                            child: CustomPaint(
+                              painter: CropRectPainter(cropRect),
                             ),
                           ),
-                        if (_showCropOverlay) ..._buildHandles(),
-                      ],
-                    ),
+                        ),
+                      if (_showCropOverlay) ..._buildHandles(),
+                    ],
                   ),
                 );
               },

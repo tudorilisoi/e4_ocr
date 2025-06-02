@@ -19,7 +19,7 @@ Future<InputImage?> getInputImageFromRepaintBoundary(
           as RenderRepaintBoundary?;
 
   // Capture the widget as an image
-  final ui.Image uiImage = await boundary!.toImage(pixelRatio: 1.0);
+  final ui.Image uiImage = boundary!.toImageSync(pixelRatio: 1.0);
   final byteData = await uiImage.toByteData(format: ui.ImageByteFormat.png);
   final bytes = byteData!.buffer.asUint8List();
 
