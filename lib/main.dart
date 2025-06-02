@@ -117,7 +117,6 @@ class _HomePageState extends State<HomePage> {
 
   Widget _body() {
     if (_croppedFile != null || _pickedFile != null) {
-      return _uploaderCard();
       return _imageCard();
     } else {
       return _uploaderCard();
