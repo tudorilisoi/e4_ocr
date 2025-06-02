@@ -17,6 +17,42 @@ void main() {
   runApp(const MyApp());
 }
 
+ThemeData darkTheme(Color baseColor) => ThemeData.dark().copyWith(
+  primaryColor: baseColor,
+  colorScheme: ColorScheme.dark(
+    primary: baseColor,
+    secondary: baseColor.withOpacity(0.8),
+    surface: Colors.grey[900]!,
+    onPrimary: Colors.white, // Text/icon color when on primary
+    onSecondary: Colors.white, // Text/icon color when on secondary
+    onSurface: Colors.white, // Default text/icon color
+  ),
+  floatingActionButtonTheme: FloatingActionButtonThemeData(
+    backgroundColor: baseColor,
+    foregroundColor: Colors.white, // Ensures icon is visible
+  ),
+  elevatedButtonTheme: ElevatedButtonThemeData(
+    style: ElevatedButton.styleFrom(
+      foregroundColor: Colors.white,
+      backgroundColor: baseColor,
+    ),
+  ),
+  textButtonTheme: TextButtonThemeData(
+    style: TextButton.styleFrom(foregroundColor: baseColor),
+  ),
+  outlinedButtonTheme: OutlinedButtonThemeData(
+    style: OutlinedButton.styleFrom(
+      foregroundColor: baseColor,
+      side: BorderSide(color: baseColor),
+    ),
+  ),
+  toggleButtonsTheme: ToggleButtonsThemeData(
+    color: baseColor.withOpacity(0.6),
+    selectedColor: baseColor,
+    fillColor: baseColor.withOpacity(0.1),
+  ),
+);
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -25,60 +61,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Demo',
-      theme: ThemeData(
-        highlightColor: const Color(0xFFD0996F),
-        canvasColor: const Color(0xFFFDF5EC),
-        textTheme: TextTheme(
-          headlineSmall: ThemeData.light().textTheme.headlineSmall!.copyWith(
-            color: const Color(0xFFBC764A),
-          ),
-        ),
-        iconTheme: IconThemeData(color: Colors.grey[600]),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFFBC764A),
-          centerTitle: false,
-          foregroundColor: Colors.white,
-          actionsIconTheme: IconThemeData(color: Colors.white),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ButtonStyle(
-            backgroundColor: WidgetStateColor.resolveWith(
-              (states) => const Color(0xFFBC764A),
-            ),
-            foregroundColor: WidgetStateColor.resolveWith(
-              (states) => Colors.white,
-            ),
-          ),
-        ),
-        outlinedButtonTheme: OutlinedButtonThemeData(
-          style: ButtonStyle(
-            foregroundColor: WidgetStateColor.resolveWith(
-              (states) => const Color(0xFFBC764A),
-            ),
-            side: WidgetStateBorderSide.resolveWith(
-              (states) => const BorderSide(color: Color(0xFFBC764A)),
-            ),
-          ),
-        ),
-        textButtonTheme: TextButtonThemeData(
-          style: ButtonStyle(
-            foregroundColor: WidgetStateColor.resolveWith(
-              (states) => const Color(0xFFBC764A),
-            ),
-          ),
-        ),
-        iconButtonTheme: IconButtonThemeData(
-          style: ButtonStyle(
-            foregroundColor: WidgetStateColor.resolveWith(
-              (states) => const Color(0xFFBC764A),
-            ),
-          ),
-        ),
-        colorScheme: ColorScheme.fromSwatch().copyWith(
-          background: const Color(0xFFFDF5EC),
-          primary: const Color(0xFFD0996F),
-        ),
-      ),
+      theme: darkTheme(Color(0x303f9f)),
       home: const HomePage(title: 'Image Cropper Demo'),
     );
   }
@@ -189,7 +172,7 @@ class _HomePageState extends State<HomePage> {
           onPressed: () {
             _clear();
           },
-          backgroundColor: Colors.redAccent,
+          // backgroundColor: Colors.redAccent,
           tooltip: 'Delete',
           child: const Icon(Icons.delete),
         ),
@@ -200,7 +183,7 @@ class _HomePageState extends State<HomePage> {
               onPressed: () {
                 _cropImage();
               },
-              backgroundColor: const Color(0xFFBC764A),
+              // backgroundColor: const Color(0xFFBC764A),
               tooltip: 'Crop',
               child: const Icon(Icons.crop),
             ),
@@ -287,8 +270,8 @@ class _HomePageState extends State<HomePage> {
         uiSettings: [
           AndroidUiSettings(
             toolbarTitle: 'Cropper',
-            toolbarColor: Colors.deepOrange,
-            toolbarWidgetColor: Colors.white,
+            toolbarColor: Color(0x303f9f),
+            toolbarWidgetColor: Colors.black,
             initAspectRatio: CropAspectRatioPreset.square,
             lockAspectRatio: false,
             aspectRatioPresets: [
