@@ -1,12 +1,19 @@
 import 'dart:io';
 
 import 'package:dotted_border/dotted_border.dart';
+import 'package:e4_ocr/helpers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 
 void main() {
+  debugPrint = (String? message, {int? wrapWidth}) {
+    if (message != null &&
+        !(message.startsWith('I/') || message.startsWith('D/'))) {
+      debugPrintSynchronously(':app D/$message');
+    }
+  };
   runApp(const MyApp());
 }
 
@@ -310,6 +317,8 @@ class _HomePageState extends State<HomePage> {
       if (croppedFile != null) {
         setState(() {
           _croppedFile = croppedFile;
+          debugPrint('Cropped is: ${croppedFile.path} ');
+          getOCRTextFromImage(croppedFile.path);
         });
       }
     }

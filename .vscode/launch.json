@@ -14,7 +14,8 @@
             "name": "e4_ocr (profile mode)",
             "request": "launch",
             "type": "dart",
-            "flutterMode": "profile"
+            "flutterMode": "profile",
+            "internalConsoleOptions": "openOnSessionStart"
         },
         {
             "name": "e4_ocr (release mode)",
