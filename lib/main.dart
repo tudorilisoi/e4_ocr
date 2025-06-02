@@ -189,6 +189,17 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
               },
             ),
           ),
+          Container(
+            padding: const EdgeInsets.all(12),
+            color: Colors.black.withOpacity(0.6),
+            width: double.infinity,
+            child: Text(
+              'Position: (${cropRect.left.toStringAsFixed(1)}, ${cropRect.top.toStringAsFixed(1)}) | '
+              'Size: ${cropRect.width.toStringAsFixed(1)} x ${cropRect.height.toStringAsFixed(1)}',
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+          ),
           if (_recognizedText.isNotEmpty)
             Container(
               padding: const EdgeInsets.all(12),
