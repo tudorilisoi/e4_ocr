@@ -104,7 +104,9 @@ class _MyHomePageState extends State<MyHomePage> {
     // I use photo manager to get the image from the gallery, but you can use any other method to get the image
     final permitted = await PhotoManager.requestPermissionExtend();
     if (!(permitted.isAuth || permitted.hasAccess)) {
-      throw Exception('Permission not granted');
+      await PhotoManager.openSetting();
+      getPermissionAndSelectImage();
+      // throw Exception('Permission not granted');
     }
     final albums = await PhotoManager.getAssetPathList();
     final recentAlbum = albums.first;
