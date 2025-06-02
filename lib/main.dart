@@ -72,7 +72,7 @@ class ImageCropScreen extends StatefulWidget {
 
 class _ImageCropScreenState extends State<ImageCropScreen> {
   bool _showCropOverlay = true;
-  String _recognizedText = "";
+  String _recognizedText = "foobar";
   final GlobalKey _imageKey = GlobalKey();
 
   final double handleSize = 20;
@@ -126,15 +126,9 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
   }
 
   Future<void> _cropAndRecognizeText() async {
-    final inputImage = await getCroppedImage(_imageKey, cropRect);
-
-    if (inputImage == null) {
-      debugPrint("No OCR image");
-      return;
-    }
-
-    // final recognizer = TextRecognizer(script: TextRecognitionScript.latin);
-    // final result = await recognizer.processImage(inputImage);
+    getCroppedImage(widget.image, cropRect).then((value) {
+      debugPrint("Image cropped");
+    });
 
     // setState(() => _recognizedText = result.text);
     // recognizer.close();
@@ -196,7 +190,7 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
             child: Text(
               'Position: (${cropRect.left.toStringAsFixed(1)}, ${cropRect.top.toStringAsFixed(1)}) | '
               'Size: ${cropRect.width.toStringAsFixed(1)} x ${cropRect.height.toStringAsFixed(1)}',
-              style: const TextStyle(color: Colors.white, fontSize: 16),
+              style: const TextStyle(color: Colors.white, fontSize: 12),
               textAlign: TextAlign.center,
             ),
           ),

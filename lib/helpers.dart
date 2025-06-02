@@ -8,50 +8,50 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 
-Future<InputImage?> getCroppedImage(
-  GlobalKey repaintBoundaryKey,
-  Rect cropRect,
-) async {
-  // try {
-  // Get the render object from the key
-  final boundary =
-      repaintBoundaryKey.currentContext?.findRenderObject()
-          as RenderRepaintBoundary?;
-  /*         
+Future<InputImage?> getCroppedImage(File image, Rect cropRect) async {
+  debugPrint(image.path);
 
-  // Capture the widget as an image
-  final ui.Image uiImage = boundary!.toImageSync(pixelRatio: 1.0);
-  final byteData = await uiImage.toByteData(format: ui.ImageByteFormat.png);
-  final bytes = byteData!.buffer.asUint8List();
+  if (!await File(image.path).exists()) {
+    debugPrint("❌ File does not exist: ${image.path}");
+    return null;
+  }
 
-  // Decode the bytes into an image.Image
-  final imageImage = img.decodeImage(bytes);
-  debugPrint(imageImage!.data.toString());
-  final croppedImage = img.copyCrop(
-    imageImage!,
-    x: cropRect.left.toInt(),
-    width: (cropRect.right.toInt() - cropRect.left.toInt()),
-    y: cropRect.top.toInt(),
-    height: (cropRect.bottom.toInt() - cropRect.top.toInt()),
-  );
+  final imageDir = await getCroppedPath();
+  final imagePath =
+      '${imageDir}/cropped_${DateTime.now().millisecondsSinceEpoch}.png';
+  final x = cropRect.left.toInt(),
+      width = (cropRect.right.toInt() - cropRect.left.toInt()),
+      y = cropRect.top.toInt(),
+      height = (cropRect.bottom.toInt() - cropRect.top.toInt());
+
+  debugPrint('$x $y {$width}x{$height}');
+  final cmd = img.Command()
+    ..decodeImageFile(image.path)
+    ..copyResize(width: 1000, maintainAspect: true)
+    // NOTE this is broken!!
+    ..copyCrop(
+      x: x,
+      y: y,
+      width: width,
+      height: height,
+      radius: 0,
+      antialias: false,
+    )
+    ..encodePngFile(imagePath);
+
+  await cmd.executeThread();
+
   debugPrint('Rect: $cropRect');
+  debugPrint('path: $imagePath');
 
   // Create InputImage directly from bytes (ML Kit will auto-handle decoding PNG)
-  // final imagePath = await _savePngToTempFile(croppedImage);
-  final imagePath = await _savePngToTempFile(imageImage);
+  // final imagePath = await getCroppedPath(croppedImage);
 
-  final InputImage inputImage = InputImage.fromFilePath(imagePath!);
+  final InputImage inputImage = InputImage.fromFilePath(imagePath);
   return inputImage;
-  // } catch (e) {
-  //   debugPrint('$cropRect');
-  //   debugPrint('Error generating InputImage: $e');
-  //   rethrow;
-  //   // return null;
-  // }
-  */
 }
 
-Future<String?> _savePngToTempFile(img.Image image) async {
+Future<String?> getCroppedPath() async {
   // final tempDir = await getTemporaryDirectory();
   Directory? downloadsDir;
   if (Platform.isAndroid) {
@@ -62,15 +62,5 @@ Future<String?> _savePngToTempFile(img.Image image) async {
   } else {
     downloadsDir = await getDownloadsDirectory();
   }
-
-  // if (downloadsDir?.path == null) {
-  //   throw Exception("No download dir");
-  // }
-
-  final bytes = img.encodePng(image);
-  await img.writeFile(
-    '${downloadsDir!.path}/repaint_image_${DateTime.now().millisecondsSinceEpoch}.png',
-    bytes,
-  );
-  return downloadsDir.path;
+  return downloadsDir!.path;
 }
