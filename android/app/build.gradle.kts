@@ -10,7 +10,7 @@ android {
     // compileSdk = flutter.compileSdkVersion
 
     // NOTE required by photo_manager 
-    compileSdkVersion = "android-34"
+    compileSdkVersion = "android-35"
     ndkVersion = "27.0.12077973"
     
     // ndkVersion = flutter.ndkVersion

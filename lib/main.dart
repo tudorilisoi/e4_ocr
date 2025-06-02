@@ -1,10 +1,9 @@
 import 'dart:io';
 
+import 'package:e4_ocr/helpers.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:image/image.dart' as img;
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:image_picker/image_picker.dart';
 
 void main() {
   runApp(const MyApp());
@@ -74,6 +73,7 @@ class ImageCropScreen extends StatefulWidget {
 class _ImageCropScreenState extends State<ImageCropScreen> {
   bool _showCropOverlay = true;
   String _recognizedText = "";
+  final GlobalKey _imageKey = GlobalKey();
 
   final double handleSize = 20;
   Rect cropRect = const Rect.fromLTWH(100, 100, 200, 200);
@@ -126,40 +126,21 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
   }
 
   Future<void> _cropAndRecognizeText() async {
-    final original = File(widget.image.path);
-    final bytes = await original.readAsBytes();
-    final image = img.decodeImage(bytes);
+    final inputImage = await getInputImageFromRepaintBoundary(
+      _imageKey,
+      cropRect,
+    );
 
-    if (image == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Failed to decode image')));
+    if (inputImage == null) {
+      print("No OCR image");
       return;
     }
 
-    // Get render size to scale cropRect
-    final box = context.findRenderObject() as RenderBox;
-    final scaleX = image.width / box.size.width;
-    final scaleY = image.height / box.size.height;
+    // final recognizer = TextRecognizer(script: TextRecognitionScript.latin);
+    // final result = await recognizer.processImage(inputImage);
 
-    final cropped = img.copyCrop(
-      image,
-      x: (cropRect.left * scaleX).round(),
-      y: (cropRect.top * scaleY).round(),
-      width: (cropRect.width * scaleX).round(),
-      height: (cropRect.height * scaleY).round(),
-    );
-
-    final tempDir = await getTemporaryDirectory();
-    final croppedFile = File('${tempDir.path}/cropped.png')
-      ..writeAsBytesSync(img.encodePng(cropped));
-
-    final inputImage = InputImage.fromFile(croppedFile);
-    final recognizer = TextRecognizer(script: TextRecognitionScript.latin);
-    final result = await recognizer.processImage(inputImage);
-
-    setState(() => _recognizedText = result.text);
-    recognizer.close();
+    // setState(() => _recognizedText = result.text);
+    // recognizer.close();
   }
 
   @override
@@ -186,25 +167,28 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
-                return InteractiveViewer(
-                  boundaryMargin: const EdgeInsets.all(20),
-                  minScale: 1,
-                  maxScale: 4,
-                  child: Stack(
-                    children: [
-                      Image.file(widget.image, fit: BoxFit.contain),
-                      if (_showCropOverlay)
-                        Positioned.fill(
-                          child: GestureDetector(
-                            onPanStart: _onDragStart,
-                            onPanUpdate: _onDragUpdate,
-                            child: CustomPaint(
-                              painter: CropRectPainter(cropRect),
+                return RepaintBoundary(
+                  key: _imageKey,
+                  child: InteractiveViewer(
+                    boundaryMargin: const EdgeInsets.all(20),
+                    minScale: 1,
+                    maxScale: 4,
+                    child: Stack(
+                      children: [
+                        Image.file(widget.image, fit: BoxFit.contain),
+                        if (_showCropOverlay)
+                          Positioned.fill(
+                            child: GestureDetector(
+                              onPanStart: _onDragStart,
+                              onPanUpdate: _onDragUpdate,
+                              child: CustomPaint(
+                                painter: CropRectPainter(cropRect),
+                              ),
                             ),
                           ),
-                        ),
-                      if (_showCropOverlay) ..._buildHandles(),
-                    ],
+                        if (_showCropOverlay) ..._buildHandles(),
+                      ],
+                    ),
                   ),
                 );
               },
