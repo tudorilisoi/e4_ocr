@@ -17,29 +17,28 @@ Future<InputImage?> getInputImageFromRepaintBoundary(
   final boundary =
       repaintBoundaryKey.currentContext?.findRenderObject()
           as RenderRepaintBoundary?;
-  if (boundary == null) return null;
 
   // Capture the widget as an image
-  final ui.Image uiImage = await boundary.toImage(pixelRatio: 1.0);
+  final ui.Image uiImage = await boundary!.toImage(pixelRatio: 1.0);
   final byteData = await uiImage.toByteData(format: ui.ImageByteFormat.png);
   final bytes = byteData!.buffer.asUint8List();
 
   // Decode the bytes into an image.Image
   final imageImage = img.decodeImage(bytes);
-  if (imageImage == null) {
-    // TODO throw
-    return null;
-  }
+  debugPrint(imageImage!.data.toString());
   final croppedImage = img.copyCrop(
-    imageImage,
+    imageImage!,
     x: cropRect.left.toInt(),
     width: (cropRect.right.toInt() - cropRect.left.toInt()),
     y: cropRect.top.toInt(),
     height: (cropRect.bottom.toInt() - cropRect.top.toInt()),
   );
+  debugPrint('Rect: $cropRect');
 
   // Create InputImage directly from bytes (ML Kit will auto-handle decoding PNG)
-  final imagePath = await _savePngToTempFile(croppedImage);
+  // final imagePath = await _savePngToTempFile(croppedImage);
+  final imagePath = await _savePngToTempFile(imageImage);
+
   final InputImage inputImage = InputImage.fromFilePath(imagePath!);
   return inputImage;
   // } catch (e) {
@@ -71,5 +70,5 @@ Future<String?> _savePngToTempFile(img.Image image) async {
     '${downloadsDir!.path}/repaint_image_${DateTime.now().millisecondsSinceEpoch}.png',
     bytes,
   );
-  return downloadsDir!.path;
+  return downloadsDir.path;
 }
